@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>IndexedDB: Almacenamiento local con HTML5</title>
+        <script type="text/javascript">
+            var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+            
+            function startDB() {
+                dataBase = indexedDB.open("object", 1);
+                dataBase.onupgradeneeded = function (e) {
+                    active = dataBase.result;
+                    
+                    object = active.createObjectStore("people", { keyPath : 'id', autoIncrement : true });
+                    object.createIndex('by_name', 'name', { unique : false });
+                    object.createIndex('by_dni', 'dni', { unique : true });
+                };
+
+                dataBase.onsuccess = function (e) {
+                    alert('Base de datos cargada correctamente');
+					loadAll();        
+                };
+        
+                dataBase.onerror = function (e)  {
+                    alert('Error cargando la base de datos');
+                };
+            }
+         
+			function add() {
+                var active = dataBase.result;
+				var data = active.transaction(["people"], "readwrite");
+				var object = data.objectStore("people");
+                
+				var request = object.put({
+                    dni: document.querySelector("#dni").value,
+                    name: document.querySelector("#name").value,
+                    surname: document.querySelector("#surname").value
+                });
+				
+				request.onerror = function (e) {
+                    alert(request.error.name + '\n\n' + request.error.message);
+                };
+				
+				data.oncomplete = function (e) {
+                    document.querySelector("#dni").value = '';
+                    document.querySelector("#name").value = '';
+                    document.querySelector("#surname").value = '';
+                    alert('Objeto agregado correctamente');
+                };
+            }	
+
+            function loadAll() {
+
+                var active = dataBase.result;
+                var data = active.transaction(["people"], "readonly");
+                var object = data.objectStore("people");
+
+                var elements = [];
+
+                object.openCursor().onsuccess = function (e) {
+                    var result = e.target.result;
+                    if (result === null) {
+                        return;
+                    }
+                    elements.push(result.value);
+                    result.continue();
+                };
+
+                data.oncomplete = function () {
+                    var outerHTML = '';
+                    for (var key in elements) {
+                        outerHTML += '\n\
+                        <tr>\n\
+                            <td>' + elements[key].dni + '</td>\n\
+                            <td>' + elements[key].name + '</td>\n\
+                            <td>\n\
+                                <button type="button" onclick="load(' + elements[key].id + ')">Details</button>\n\
+								<button type="button" onclick="loadByDni(' + elements[key].dni + ')">Details DNI</button>\n\
+								<button type="button" onclick="borrar(' + elements[key].id + ')">Delete</button>\n\
+                            </td>\n\
+                        </tr>';
+                    }
+                    elements = [];
+                    document.querySelector("#elementsList").innerHTML = outerHTML;
+                };
+
+            }
+			
+			function load(id) {
+				var active = dataBase.result;
+				var data = active.transaction(["people"], "readonly");
+				var object = data.objectStore("people");
+				var request = object.get(parseInt(id));
+				
+				request.onsuccess = function () {
+					var result = request.result;
+
+					if (result !== undefined) {
+						alert("ID: " + result.id + "\n\DNI " + result.dni + "\n\Name: " + result.name + "\n\Surname: " + result.surname);
+						document.querySelector("#ident").value = result.id;
+						document.querySelector("#dni").value = result.dni;
+						document.querySelector("#name").value = result.name;
+						document.querySelector("#surname").value = result.surname;
+					}
+				};
+			}
+
+			function loadByDni(dni) {
+				var active = dataBase.result;
+				var data = active.transaction(["people"], "readonly");
+				var object = data.objectStore("people");
+				var index = object.index("by_dni");
+				var request = index.get(String(dni));
+
+				request.onsuccess = function () {
+					var result = request.result;
+
+					if (result !== undefined) {
+						alert("ID: " + result.id + "\n\
+							   DNI " + result.dni + "\n\
+							   Name: " + result.name + "\n\
+							   Surname: " + result.surname);
+					}
+				};
+			}
+			
+			function loadAllByName() {
+				var active = dataBase.result;
+				var data = active.transaction(["people"], "readonly");
+				var object = data.objectStore("people");
+				var index = object.index("by_name");
+
+				var elements = [];
+
+				index.openCursor().onsuccess = function (e) {
+
+					var result = e.target.result;
+
+					if (result === null) {
+						return;
+					}
+
+					elements.push(result.value);
+					result.continue();
+
+				};
+
+				data.oncomplete = function () {
+
+					var outerHTML = '';
+
+					for (var key in elements) {
+
+						outerHTML += '\n\
+						<tr>\n\
+							<td>' + elements[key].dni + '</td>\n\
+							<td>' + elements[key].name + '</td>\n\
+							<td>\n\
+								<button type="button" onclick="load(' + elements[key].id + ')">Details</button>\n\
+								<button type="button" onclick="loadByDni(' + elements[key].dni + ')">Details DNI</button>\n\
+								<button type="button" onclick="borrar(' + elements[key].id + ')">Delete</button>\n\
+							</td>\n\
+						</tr>';
+
+					}
+
+					elements = [];
+					document.querySelector("#elementsList").innerHTML = outerHTML;
+				};
+			}
+
+			function borrar(id) {
+				var active = dataBase.result;
+				var data = active.transaction(["people"], "readwrite");
+				var object = data.objectStore("people");
+				var request = object.delete(id);
+				
+				request.onsuccess = function () {
+					var result = request.result;
+					if (result !== undefined) {
+						alert("ID: " + result.id + "\n\
+							   DNI " + result.dni + "\n\
+							   Name: " + result.name + "\n\
+							   Surname: " + result.surname);
+					}
+				};
+				
+				request.onerror = function (e) {
+                    alert(request.error.name + '\n\n' + request.error.message);
+                };
+			}
+
+			function update(){
+				var id = document.querySelector("#ident").value;
+				var active = dataBase.result;
+				var data = active.transaction(["people"], "readwrite");
+				var object = data.objectStore("people");
+				var oRequest = object.get(parseInt(id));
+
+				oRequest.onsuccess = function(){
+					var dato = oRequest.result;
+					dato.dni = document.querySelector("#dni").value,
+                    dato.name = document.querySelector("#name").value,
+                    dato.surname = document.querySelector("#surname").value
+					
+					var requestUpdate = object.put(dato);
+					requestUpdate.onerror = function (e) {
+						alert(requestUpdate.error.name + '\n\n' + requestUpdate.error.message);
+					};
+				}
+				
+				oRequest.onerror = function (e) {
+                    alert(oRequest.error.name + '\n\n' + oRequest.error.message);
+                };
+			}
+		</script>
+    </head>
+    <body onload="startDB();">
+		<input type="text" id="ident" placeholder="Identificador" disabled /> <br />
+		<input type="text" id="dni" placeholder="Introducir dni" /> <br />
+        <input type="text" id="name" placeholder="Introducir nombre" /> <br />
+        <input type="text" id="surname" placeholder="Introducir apellidos" /> <br />
+        <button type="button" onclick="add();">Guardar</button> <br />
+        <button type="button" onclick="update();">Actualizar</button> <br />
+		<hr>
+		<div id="elements">
+			<table>
+				<caption>Persons</caption>
+				<thead>
+					<tr>
+						<th>DNI</th>
+						<th>Name</th>
+						<th> </th>
+					</tr>
+				</thead>
+				<tbody id="elementsList">
+					<tr>
+						<td colspan="3">Not elements to show</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<button type="button" onclick="loadAllByName();">Order by name</button>
+    </body>
+</html>
