@@ -480,6 +480,7 @@ function actualizar(){
       alert(requestUpdate.error.name + '\n\n' + requestUpdate.error.message);
     };
     requestUpdate.onsuccess = function(e){
+      document.querySelector("#id").value="";
       document.querySelector("#fecha").value="";
       abrirTab(null, 'lista');
     }
