@@ -142,9 +142,9 @@
           <input class="w3-input" type="text" id="detalle" placeholder="" /> 
           <label for="comentarios">Comentarios:</label>
           <input class="w3-input" type="text" id="comentarios" placeholder="" /> 
-          <button type="button" onclick="guardar();">
+          <button id="btnguardar" type="button" onclick="guardar();">
             <i class="fa fa-floppy-o fa-3x" aria-hidden="true"></i><br />Guardar</button> 
-          <button type="button" onclick="actualizar();">
+          <button id="btnactualizar" type="button" onclick="actualizar();">
             <i class="fa fa-floppy-o fa-3x" aria-hidden="true"></i><br />Actualizar</button> 
         </form>
         </p>
@@ -219,6 +219,15 @@ function abrirTab(evt, nombreTab) {
     document.getElementById(nombreTab).style.display = "block";
     if(evt!=null)
       evt.currentTarget.className += " active";
+    if(document.querySelector("#id").value!=""){
+      document.querySelector("#btnguardar").style.visibility="hidden";
+      document.querySelector("#btnactualizar").style.visibility="visible";
+    }
+    else
+    {
+      document.querySelector("#btnguardar").style.visibility="visible";
+      document.querySelector("#btnactualizar").style.visibility="hidden";
+    }
 }
 
 var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
