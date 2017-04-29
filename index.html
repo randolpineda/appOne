@@ -344,6 +344,7 @@ function guardar() {
   trans.oncomplete = function (e) {
     document.querySelector("#id").value = '';
     alert('Registro agregado correctamente');
+    document.querySelector("#fecha").value ="";
     cargar_x_fecha();
     abrirTab(null,'lista');
   };
@@ -479,6 +480,7 @@ function actualizar(){
       alert(requestUpdate.error.name + '\n\n' + requestUpdate.error.message);
     };
     requestUpdate.onsuccess = function(e){
+      document.querySelector("#fecha").value="";
       abrirTab(null, 'lista');
     }
   }
