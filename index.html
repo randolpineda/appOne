@@ -1,245 +1,595 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>IndexedDB: Almacenamiento local con HTML5</title>
-        <script type="text/javascript">
-            var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-            
-            function startDB() {
-                dataBase = indexedDB.open("object", 1);
-                dataBase.onupgradeneeded = function (e) {
-                    active = dataBase.result;
-                    
-                    object = active.createObjectStore("people", { keyPath : 'id', autoIncrement : true });
-                    object.createIndex('by_name', 'name', { unique : false });
-                    object.createIndex('by_dni', 'dni', { unique : true });
-                };
+<meta name="robots" content="noindex">
+<html lang="es-PA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/w3.css">
+  <title>mceApp</title>
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <![endif]-->
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Verdana,sans-serif;
+      font-size: 0.9em;
+    }
 
-                dataBase.onsuccess = function (e) {
-                    alert('Base de datos cargada correctamente');
-					loadAll();        
-                };
-        
-                dataBase.onerror = function (e)  {
-                    alert('Error cargando la base de datos');
-                };
-            }
-         
-			function add() {
-                var active = dataBase.result;
-				var data = active.transaction(["people"], "readwrite");
-				var object = data.objectStore("people");
-                
-				var request = object.put({
-                    dni: document.querySelector("#dni").value,
-                    name: document.querySelector("#name").value,
-                    surname: document.querySelector("#surname").value
-                });
-				
-				request.onerror = function (e) {
-                    alert(request.error.name + '\n\n' + request.error.message);
-                };
-				
-				data.oncomplete = function (e) {
-                    document.querySelector("#dni").value = '';
-                    document.querySelector("#name").value = '';
-                    document.querySelector("#surname").value = '';
-                    alert('Objeto agregado correctamente');
-                };
-            }	
+    header, footer {
+      padding: 10px;
+      color: white;
+      background-color: black;
+    }
 
-            function loadAll() {
+    section {
+      margin: 5px;
+      padding: 10px;
+      background-color: lightgrey;
+    }
 
-                var active = dataBase.result;
-                var data = active.transaction(["people"], "readonly");
-                var object = data.objectStore("people");
+    article {
+      margin: 5px;
+      padding: 10px;
+      background-color: white;
+    }
 
-                var elements = [];
+    nav.tab {
+      overflow: hidden;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+    }
 
-                object.openCursor().onsuccess = function (e) {
-                    var result = e.target.result;
-                    if (result === null) {
-                        return;
-                    }
-                    elements.push(result.value);
-                    result.continue();
-                };
+    /* Style the buttons inside the tab */
+    nav.tab button {
+      background-color: inherit;
+      float: left;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      transition: 0.3s;
+      font-size: 17px;
+    }
 
-                data.oncomplete = function () {
-                    var outerHTML = '';
-                    for (var key in elements) {
-                        outerHTML += '\n\
-                        <tr>\n\
-                            <td>' + elements[key].dni + '</td>\n\
-                            <td>' + elements[key].name + '</td>\n\
-                            <td>\n\
-                                <button type="button" onclick="load(' + elements[key].id + ')">Details</button>\n\
-								<button type="button" onclick="loadByDni(' + elements[key].dni + ')">Details DNI</button>\n\
-								<button type="button" onclick="borrar(' + elements[key].id + ')">Delete</button>\n\
-                            </td>\n\
-                        </tr>';
-                    }
-                    elements = [];
-                    document.querySelector("#elementsList").innerHTML = outerHTML;
-                };
+    /* Change background color of buttons on hover */
+    nav.tab button:hover {
+      background-color: #ddd;
+    }
 
-            }
-			
-			function load(id) {
-				var active = dataBase.result;
-				var data = active.transaction(["people"], "readonly");
-				var object = data.objectStore("people");
-				var request = object.get(parseInt(id));
-				
-				request.onsuccess = function () {
-					var result = request.result;
+    /* Create an active/current tablink class */
+    nav.tab button.active {
+      background-color: #ccc;
+    }
 
-					if (result !== undefined) {
-						alert("ID: " + result.id + "\n\DNI " + result.dni + "\n\Name: " + result.name + "\n\Surname: " + result.surname);
-						document.querySelector("#ident").value = result.id;
-						document.querySelector("#dni").value = result.dni;
-						document.querySelector("#name").value = result.name;
-						document.querySelector("#surname").value = result.surname;
-					}
-				};
-			}
+    .tabcontent {
+      display: none;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+</style>
+  </head>
+  <body onload="obtener_base_datos();abrirTab(event,'inicio');">
+    <header>
+      <h1>mceApp 1.0</h1>
+    </header>
 
-			function loadByDni(dni) {
-				var active = dataBase.result;
-				var data = active.transaction(["people"], "readonly");
-				var object = data.objectStore("people");
-				var index = object.index("by_dni");
-				var request = index.get(String(dni));
+    <nav class="tab">
+      <button class="tablinks" onclick="abrirTab(event,'inicio')">
+        <i class="fa fa-home fa-3x" aria-hidden="true"></i><br />Inicio</button>
+      <button id="btn02" class="tablinks" onclick="abrirTab(event,'lista')">
+        <i class="fa fa-list fa-3x" aria-hidden="true"></i><br />Lista</button>
+      <button class="tablinks" onclick="abrirTab(event,'agregar')">
+        <i class="fa fa-pencil-square fa-3x" aria-hidden="true"></i><br />Agregar</button>
+      <button class="tablinks" onclick="abrirTab(event,'reporte')">
+        <i class="fa fa-list fa-3x" aria-hidden="true"></i><br />Reporte</button>
+    </nav>
 
-				request.onsuccess = function () {
-					var result = request.result;
+    <section>
+      <h2>...</h2>
+      <div id="inicio" class="tabcontent">
+        <h3>Inicio</h3>
+        <p>Pagina inicial de la aplicación</p>
+      </div>
+      <div id="agregar" class="tabcontent">
+        <div class="w3-container w3-gray">
+          <h3>Formulario</h3>
+        </div>
+        <form class="w3-container">
+          <label for="id">Id:</label>
+          <input class="w3-input" type="text" id="id" placeholder="Identificador" disabled /> <br />
+          <label for=""fecha>Fecha:</label>
+          <input class="w3-input" type="date" id="fecha" placeholder="Fecha" />
+          <label for="avivamiento">Avivamientos:</label>
+          <input class="w3-input" type="number" id="avivamiento" placeholder="" /> 
+          <label for="hogares">Hogares Visitados:</label>
+          <input class="w3-input" type="number" id="hogares" placeholder="" /> 
+          <label for="estudios">Estudios Biblicos:</label>
+          <input class="w3-input" type="number" id="estudios" placeholder="" /> 
+          <label for="realizados">Estudios Realizados:</label>
+          <input class="w3-input" type="number" id="realizados" placeholder="" /> 
+          <label for="biblias">Biblias Distribuidas:</label>
+          <input class="w3-input" type="number" id="biblias" placeholder="" /> 
+          <label for="mensajeros">Mensajeros Distribuidos:</label>
+          <input class="w3-input" type="number" id="mensajeros" placeholder="" /> 
+          <label for="porciones">Porciones Distribuidas:</label>
+          <input class="w3-input" type="number" id="porciones" placeholder="" /> 
+          <label for="enfermos">Visitas a los Cultos:</label>
+          <input class="w3-input" type="number" id="visitas" placeholder="" /> 
+          <label for="">Enfermos Visitados:</label>
+          <input class="w3-input" type="number" id="enfermos" placeholder="" /> 
+          <label for="ayunos">Ayunos Realizados:</label>
+          <input class="w3-input" type="number" id="ayunos" placeholder="" /> 
+          <label for="horas">Cantidad de Horas:</label>
+          <input class="w3-input" type="number" id="horas" placeholder="" /> 
+          <label for="sanidades">Sanidades Divinas:</label>
+          <input class="w3-input" type="number" id="sanidades" placeholder="" />
+          <label for="mensajes">Mensajes Predicados:</label>
+          <input class="w3-input" type="number" id="mensajes" placeholder="" /> 
+          <label for="dirigidos">Cultos Dirigidos:</label>
+          <input class="w3-input" type="number" id="dirigidos" placeholder="" />
+          <label for="devocionales">Horas Devocionales:</label>
+          <input class="w3-input" type="number" id="devocionales" placeholder="" /> 
+          <label for="trabajadas">Horas Trabajadas:</label>
+          <input class="w3-input" type="number" id="trabajadas" placeholder="" /> 
+          <label for="otros">Otros:</label>
+          <input class="w3-input" type="number" id="otros" placeholder="" /> 
+          <label for="detalle">Detalle:</label>
+          <input class="w3-input" type="text" id="detalle" placeholder="" /> 
+          <label for="comentarios">Comentarios:</label>
+          <input class="w3-input" type="text" id="comentarios" placeholder="" /> 
+          <button type="button" onclick="guardar();">
+            <i class="fa fa-floppy-o fa-3x" aria-hidden="true"></i><br />Guardar</button> 
+          <button type="button" onclick="actualizar();">
+            <i class="fa fa-floppy-o fa-3x" aria-hidden="true"></i><br />Actualizar</button> 
+        </form>
+        </p>
+      </div>  
+    <div id="lista" class="tabcontent">
+      <div class="w3-container">
+        <h3>Registros</h3>
+        <p>Lista de registros</p>
+      </div>	
+      <table class="w3-table-all">
+        <caption></caption>
+        <thead>
+          <tr class="w3-gray">
+            <th>ID</th>
+            <th>Fecha</th>
+            <th> </th>
+          </tr>
+        </thead>
+        <tbody id="elementsList">
+          <tr>
+            <td colspan="3">Not elements to show</td>
+          </tr>
+        </tbody>
+      </table>
+      </p>
+    </div>
+  <div id="reporte" class="tabcontent">
+    <div class="w3-container">
+      <h3>Registros</h3>
+      <p>Lista de registros</p>
+    </div>
+    <form class="w3-container">
+      <label for="mes">Mes:</label>
+      <input class="w3-input" type="number" id="mes" min="1" max="12" placeholder="" /> 
+      <label for="ano">Año:</label>
+      <input class="w3-input" type="number" id="ano" value="2017" placeholder="" /> 
+      <button type="button" onclick="Reporte();">
+        <i class="fa fa-search fa-3x" aria-hidden="true"></i><br />Buscar</button> 
+    </form>
+    <table class="w3-table-all">
+      <caption></caption>
+      <thead>
+        <tr class="w3-gray">
+          <th>ID</th>
+          <th>Fecha</th>
+          <th> </th>
+        </tr>
+      </thead>
+      <tbody id="elementsReporte">
+        <tr>
+          <td colspan="3">Not elements to show</td>
+        </tr>
+      </tbody>
+    </table>
 
-					if (result !== undefined) {
-						alert("ID: " + result.id + "\n\
-							   DNI " + result.dni + "\n\
-							   Name: " + result.name + "\n\
-							   Surname: " + result.surname);
-					}
-				};
-			}
-			
-			function loadAllByName() {
-				var active = dataBase.result;
-				var data = active.transaction(["people"], "readonly");
-				var object = data.objectStore("people");
-				var index = object.index("by_name");
 
-				var elements = [];
+  </div>
+  </section>
+<footer><h4>&copy; 2017 <i class="fa fa-facebook-official"></i> randolpineda | <a href="http://fontawesome.io/"><i class="fa fa-font-awesome"></i> Font Awesome</a> | <a href="https://www.w3schools.com/w3css/">w3.css</a></h4>
+</footer>
+<script id="jsbin-javascript">
+function abrirTab(evt, nombreTab) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(nombreTab).style.display = "block";
+    if(evt!=null)
+      evt.currentTarget.className += " active";
+}
 
-				index.openCursor().onsuccess = function (e) {
+var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 
-					var result = e.target.result;
+function obtener_base_datos() {
+  conexion = indexedDB.open("MCE", 1);
+  conexion.onupgradeneeded = function (e) {
+    base_datos = conexion.result;
 
-					if (result === null) {
-						return;
-					}
+    coleccion = base_datos.createObjectStore("registro_diario", { keyPath : 'id', autoIncrement : true });
+    coleccion.createIndex('fecha', 'fecha', { unique : true });
+    coleccion.createIndex('avivamiento', 'avivamiento', { unique : false });
+    coleccion.createIndex('hogares', 'hogares', { unique : false });
+    coleccion.createIndex('estudios', 'estudios', { unique : false });
+    coleccion.createIndex('realizados', 'realizados', { unique : false });
+    coleccion.createIndex('biblias', 'biblias', { unique : false });
+    coleccion.createIndex('mensajeros', 'mensajeros', { unique : false });
+    coleccion.createIndex('porciones', 'porciones', { unique : false });
+    coleccion.createIndex('visitas', 'visitas', { unique : false });
+    coleccion.createIndex('enfermos', 'enfermos', { unique : false });
+    coleccion.createIndex('ayunos', 'ayunos', { unique : false });
+    coleccion.createIndex('horas', 'horas', { unique : false });
+    coleccion.createIndex('sanidades', 'sanidades', { unique : false });
+    coleccion.createIndex('mensajes', 'mensajes', { unique : false });
+    coleccion.createIndex('dirigidos', 'dirigidos', { unique : false });
+    coleccion.createIndex('devocionales', 'devocionales', { unique : false });
+    coleccion.createIndex('trabajadas', 'trabajadas', { unique : false });
+    coleccion.createIndex('otros', 'otros', { unique : false });
+    coleccion.createIndex('detalle', 'detalle', { unique : false });
+    coleccion.createIndex('comentarios', 'comentarios', { unique : false });
+    coleccion.createIndex('ano_mes', 'ano_mes', { unique : false });
+  };
 
-					elements.push(result.value);
-					result.continue();
+  conexion.onsuccess = function (e) {
+    //alert('Base de datos cargada correctamente');
+    //cargar_coleccion();
+    cargar_x_fecha();
+  };
 
-				};
+  conexion.onerror = function (e)  {
+    alert('Error cargando la base de datos');
+  };
+}
 
-				data.oncomplete = function () {
+function cargar_coleccion() {
 
-					var outerHTML = '';
+  var base_datos = conexion.result;
+  var trans = base_datos.transaction(["registro_diario"], "readonly");
+  var coleccion = trans.objectStore("registro_diario");
 
-					for (var key in elements) {
+  var elements = [];
 
-						outerHTML += '\n\
-						<tr>\n\
-							<td>' + elements[key].dni + '</td>\n\
-							<td>' + elements[key].name + '</td>\n\
-							<td>\n\
-								<button type="button" onclick="load(' + elements[key].id + ')">Details</button>\n\
-								<button type="button" onclick="loadByDni(' + elements[key].dni + ')">Details DNI</button>\n\
-								<button type="button" onclick="borrar(' + elements[key].id + ')">Delete</button>\n\
-							</td>\n\
-						</tr>';
+  coleccion.openCursor().onsuccess = function (e) {
+    var result = e.target.result;
+    if (result === null) {
+      return;
+    }
+    elements.push(result.value);
+    result.continue();
+  };
 
-					}
+  trans.oncomplete = function () {
+    var outerHTML = '';
+    for (var key in elements) {
+      outerHTML += '\n\
+<tr>\n\
+<td>' + elements[key].id + '</td>\n\
+<td>' + elements[key].fecha + '</td>\n\
+<td>\n\
+<button type="button" onclick="cargar_registro(' + elements[key].id + ')"><i class="fa fa-pencil fa-2x" aria-hidden="true"></i></button>\n\
+<button type="button" onclick="borrar(' + elements[key].id + ')"><i class="fa fa-trash fa-2x" aria-hidden="true"></i></button>\n\
+</td>\n\
+</tr>';
+    }
+    elements = [];
+    document.querySelector("#elementsList").innerHTML = outerHTML;
+  };
 
-					elements = [];
-					document.querySelector("#elementsList").innerHTML = outerHTML;
-				};
-			}
+}
 
-			function borrar(id) {
-				var active = dataBase.result;
-				var data = active.transaction(["people"], "readwrite");
-				var object = data.objectStore("people");
-				var request = object.delete(id);
-				
-				request.onsuccess = function () {
-					var result = request.result;
-					if (result !== undefined) {
-						alert("ID: " + result.id + "\n\
-							   DNI " + result.dni + "\n\
-							   Name: " + result.name + "\n\
-							   Surname: " + result.surname);
-					}
-				};
-				
-				request.onerror = function (e) {
-                    alert(request.error.name + '\n\n' + request.error.message);
-                };
-			}
+function guardar() {
+  var base_datos = conexion.result;
+  var trans = base_datos.transaction(["registro_diario"], "readwrite");
+  var coleccion = trans.objectStore("registro_diario");
 
-			function update(){
-				var id = document.querySelector("#ident").value;
-				var active = dataBase.result;
-				var data = active.transaction(["people"], "readwrite");
-				var object = data.objectStore("people");
-				var oRequest = object.get(parseInt(id));
+  var request = coleccion.put({
+    fecha: document.querySelector("#fecha").value,
+    avivamiento: document.querySelector("#avivamiento").value,
+    hogares: document.querySelector("#hogares").value,
+    estudios: document.querySelector("#estudios").value,
+    realizados: document.querySelector("#realizados").value,
+    biblias: document.querySelector("#biblias").value,
+    mensajeros: document.querySelector("#mensajeros").value,
+    porciones: document.querySelector("#porciones").value,
+    visitas: document.querySelector("#visitas").value,
+    enfermos: document.querySelector("#enfermos").value,
+    ayunos: document.querySelector("#ayunos").value,
+    horas: document.querySelector("#horas").value,
+    sanidades: document.querySelector("#sanidades").value,
+    mensajes: document.querySelector("#mensajes").value,
+    dirigidos: document.querySelector("#dirigidos").value,
+    devocionales: document.querySelector("#devocionales").value,
+    trabajadas: document.querySelector("#trabajadas").value,
+    otros: document.querySelector("#otros").value,
+    detalle: document.querySelector("#detalle").value,
+    comentarios: document.querySelector("#comentarios").value,
+    ano_mes: document.querySelector("#fecha").value.substring(0,7),
+  });
 
-				oRequest.onsuccess = function(){
-					var dato = oRequest.result;
-					dato.dni = document.querySelector("#dni").value,
-                    dato.name = document.querySelector("#name").value,
-                    dato.surname = document.querySelector("#surname").value
-					
-					var requestUpdate = object.put(dato);
-					requestUpdate.onerror = function (e) {
-						alert(requestUpdate.error.name + '\n\n' + requestUpdate.error.message);
-					};
-				}
-				
-				oRequest.onerror = function (e) {
-                    alert(oRequest.error.name + '\n\n' + oRequest.error.message);
-                };
-			}
-		</script>
-    </head>
-    <body onload="startDB();">
-		<input type="text" id="ident" placeholder="Identificador" disabled /> <br />
-		<input type="text" id="dni" placeholder="Introducir dni" /> <br />
-        <input type="text" id="name" placeholder="Introducir nombre" /> <br />
-        <input type="text" id="surname" placeholder="Introducir apellidos" /> <br />
-        <button type="button" onclick="add();">Guardar</button> <br />
-        <button type="button" onclick="update();">Actualizar</button> <br />
-		<hr>
-		<div id="elements">
-			<table>
-				<caption>Persons</caption>
-				<thead>
-					<tr>
-						<th>DNI</th>
-						<th>Name</th>
-						<th> </th>
-					</tr>
-				</thead>
-				<tbody id="elementsList">
-					<tr>
-						<td colspan="3">Not elements to show</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-		<button type="button" onclick="loadAllByName();">Order by name</button>
-    </body>
+  request.onerror = function (e) {
+    alert(request.error.name + '\n\n' + request.error.message);
+  };
+
+  trans.oncomplete = function (e) {
+    document.querySelector("#id").value = '';
+    alert('Registro agregado correctamente');
+    cargar_x_fecha();
+    abrirTab(null,'lista');
+  };
+}	
+
+
+function cargar_registro(id) {
+  var base_datos = conexion.result;
+  var trans = base_datos.transaction(["registro_diario"], "readonly");
+  var coleccion = trans.objectStore("registro_diario");
+  var request = coleccion.get(parseInt(id));
+
+  request.onsuccess = function () {
+    var result = request.result;
+
+    if (result !== undefined) {
+      //alert("ID: " + result.id + "\n\FECHA: " + result.fecha);
+      document.querySelector("#id").value = result.id;
+      document.querySelector("#fecha").value = result.fecha;
+      document.querySelector("#avivamiento").value = result.avivamiento;
+      document.querySelector("#hogares").value = result.hogares;
+      document.querySelector("#estudios").value = result.estudios;
+      document.querySelector("#realizados").value = result.realizados;
+      document.querySelector("#biblias").value = result.biblias;
+      document.querySelector("#mensajeros").value = result.mensajeros;
+      document.querySelector("#porciones").value = result.porciones;
+      document.querySelector("#visitas").value = result.visitas;
+      document.querySelector("#enfermos").value = result.enfermos;
+      document.querySelector("#ayunos").value = result.ayunos;
+      document.querySelector("#horas").value = result.horas;
+      document.querySelector("#sanidades").value = result.sanidades;
+      document.querySelector("#mensajes").value = result.mensajes;
+      document.querySelector("#dirigidos").value = result.dirigidos;
+      document.querySelector("#devocionales").value = result.devocionales;
+      document.querySelector("#trabajadas").value = result.trabajadas;
+      document.querySelector("#otros").value = result.otros;
+      document.querySelector("#detalle").value = result.detalle;
+      document.querySelector("#comentarios").value = result.comentarios;
+      abrirTab(null, 'agregar');
+    }
+  };
+}
+
+function cargar_x_fecha() {
+  var base_datos = conexion.result;
+  var trans = base_datos.transaction(["registro_diario"], "readonly");
+  var coleccion = trans.objectStore("registro_diario");
+  var index = coleccion.index("fecha");
+
+  var elements = [];
+  index.openCursor().onsuccess = function (e) {
+  var result = e.target.result;
+  if (result === null) {
+     return;
+  }
+
+  elements.push(result.value);
+  result.continue();
+
+  };
+
+  trans.oncomplete = function () {
+    var outerHTML = '';
+    for (var key in elements) {
+      outerHTML += '\n\
+<tr>\n\
+<td>' + elements[key].id + '</td>\n\
+<td>' + elements[key].fecha + '</td>\n\
+<td>\n\
+<button type="button" onclick="cargar_registro(' + elements[key].id + ')"><i class="fa fa-pencil fa-2x" aria-hidden="true"></i></button>\n\
+<button type="button" onclick="borrar(' + elements[key].id + ')"><i class="fa fa-trash fa-2x" aria-hidden="true"></i></button>\n\
+</td>\n\
+</tr>';
+
+    }
+
+    elements = [];
+    document.querySelector("#elementsList").innerHTML = outerHTML;
+  };
+}
+
+function borrar(id) {
+  var base_datos = conexion.result;
+  var trans = base_datos.transaction(["registro_diario"], "readwrite");
+  var coleccion = trans.objectStore("registro_diario");
+  var request = coleccion.delete(id);
+
+  request.onsuccess = function () {
+    var result = request.result;
+    if (result !== undefined) {
+      alert("ID: " + result.id + "Fecha: " + result.fecha);
+    }
+    cargar_x_fecha();
+  };
+
+  request.onerror = function (e) {
+    alert(request.error.name + '\n\n' + request.error.message);
+  };
+}
+
+function actualizar(){
+  var id = document.querySelector("#id").value;
+  var base_datos = conexion.result;
+  var trans = base_datos.transaction(["registro_diario"], "readwrite");
+  var coleccion = trans.objectStore("registro_diario");
+  var oRequest = coleccion.get(parseInt(id));
+
+  oRequest.onsuccess = function(){
+    var dato = oRequest.result;
+    dato.avivamiento = document.querySelector("#avivamiento").value;
+    dato.hogares = document.querySelector("#hogares").value;
+    dato.estudios = document.querySelector("#estudios").value;
+    dato.realizados = document.querySelector("#realizados").value;
+    dato.biblias = document.querySelector("#biblias").value;
+    dato.mensajeros = document.querySelector("#mensajeros").value;
+    dato.porciones = document.querySelector("#porciones").value;
+    dato.visitas = document.querySelector("#visitas").value;
+    dato.enfermos = document.querySelector("#enfermos").value;
+    dato.ayunos = document.querySelector("#ayunos").value;
+    dato.horas = document.querySelector("#horas").value;
+    dato.sanidades = document.querySelector("#sanidades").value;
+    dato.mensajes = document.querySelector("#mensajes").value;
+    dato.dirigidos = document.querySelector("#dirigidos").value;
+    dato.devocionales = document.querySelector("#devocionales").value;
+    dato.trabajadas = document.querySelector("#trabajadas").value;
+    dato.otros = document.querySelector("#otros").value;
+    dato.detalle = document.querySelector("#detalle").value;
+    dato.comentarios = document.querySelector("#comentarios").value;
+    dato.ano_mes = document.querySelector("#fecha").value.substring(0,7);
+
+    var requestUpdate = coleccion.put(dato);
+    requestUpdate.onerror = function (e) {
+      alert(requestUpdate.error.name + '\n\n' + requestUpdate.error.message);
+    };
+    requestUpdate.onsuccess = function(e){
+      abrirTab(null, 'lista');
+    }
+  }
+
+  oRequest.onerror = function (e) {
+    alert(oRequest.error.name + '\n\n' + oRequest.error.message);
+  };
+}
+
+function Reporte() {
+  var ano = document.querySelector("#ano").value;
+  var mes = document.querySelector("#mes").value;
+  if(mes.length == 1) mes = "0" + mes;
+  var valor = ano + '-' + mes;
+  //alert(valor);
+  var base_datos = conexion.result;
+  var trans = base_datos.transaction(["registro_diario"], "readonly");
+  var coleccion = trans.objectStore("registro_diario");
+  var singleRange = IDBKeyRange.only(valor);
+  var index = coleccion.index("ano_mes");
+
+  var elements = []; 
+  
+  index.openCursor(singleRange).onsuccess = function (e) {
+  var result = e.target.result;
+  if (result === null) {
+     return;
+  }
+
+  elements.push(result.value);
+  result.continue();
+
+  };
+
+  trans.oncomplete = function () {
+    var outerHTML = '';
+    var avivamiento = 0;
+    var hogares = 0;
+    var estudios  = 0;
+    var realizados  = 0;
+    var biblias = 0;
+    var mensajeros = 0;
+    var porciones = 0;
+    var visitas = 0;
+    var enfermos = 0;
+    var ayunos  = 0;
+    var horas = 0;
+    var sanidades = 0;
+    var mensajes = 0;
+    var dirigidos = 0;
+    var devocionales = 0;
+    var trabajadas = 0;
+    var otros = 0;
+    var detalle = '';
+    var comentarios = '';
+    
+    for (var key in elements) {
+      //outerHTML += '<tr><td>' + elements[key].id + '</td><td>' + elements[key].fecha + '</td><td></td></tr>';
+      if(!isNaN(parseInt(elements[key].avivamiento))) 
+        avivamiento += parseInt(elements[key].avivamiento);
+      if(!isNaN(parseInt(elements[key].hogares))) 
+        hogares += parseInt(elements[key].hogares);
+      if(!isNaN(parseInt(elements[key].estudios))) 
+        estudios += parseInt(elements[key].estudios);
+      if(!isNaN(parseInt(elements[key].realizados))) 
+        realizados += parseInt(elements[key].realizados);
+      if(!isNaN(parseInt(elements[key].biblias))) 
+        biblias += parseInt(elements[key].biblias);
+      if(!isNaN(parseInt(elements[key].mensajeros))) 
+        mensajeros += parseInt(elements[key].mensajeros);
+      if(!isNaN(parseInt(elements[key].porciones))) 
+        porciones += parseInt(elements[key].porciones);
+      if(!isNaN(parseInt(elements[key].visitas))) 
+        visitas += parseInt(elements[key].visitas);
+      if(!isNaN(parseInt(elements[key].enfermos))) 
+        enfermos += parseInt(elements[key].enfermos);
+      if(!isNaN(parseInt(elements[key].ayunos))) 
+        ayunos += parseInt(elements[key].ayunos);
+      if(!isNaN(parseInt(elements[key].horas))) 
+        horas += parseInt(elements[key].horas);
+      if(!isNaN(parseInt(elements[key].sanidades))) 
+        sanidades += parseInt(elements[key].sanidades);
+      if(!isNaN(parseInt(elements[key].mensajes))) 
+        mensajes += parseInt(elements[key].mensajes);
+      if(!isNaN(parseInt(elements[key].dirigidos))) 
+        dirigidos += parseInt(elements[key].dirigidos);
+      if(!isNaN(parseInt(elements[key].devocionales))) 
+        devocionales += parseInt(elements[key].devocionales);
+      if(!isNaN(parseInt(elements[key].trabajadas))) 
+        trabajadas += parseInt(elements[key].trabajadas);
+      if(!isNaN(parseInt(elements[key].otros))) 
+        otros += parseInt(elements[key].otros);
+      detalle += elements[key].detalle;
+      if(elements[key].comentarios!="")
+      comentarios += elements[key].comentarios + ". ";
+    }
+      outerHTML += '<tr><td>avivamiento</td><td>' + avivamiento + '</td><td></td></tr>';
+      outerHTML += '<tr><td>hogares</td><td>' + hogares + '</td><td></td></tr>';
+      outerHTML += '<tr><td>estudios</td><td>' + estudios + '</td><td></td></tr>';
+      outerHTML += '<tr><td>realizados</td><td>' + realizados + '</td><td></td></tr>';
+      outerHTML += '<tr><td>biblias</td><td>' + biblias + '</td><td></td></tr>';
+      outerHTML += '<tr><td>mensajeros</td><td>' + mensajeros + '</td><td></td></tr>';
+      outerHTML += '<tr><td>porciones</td><td>' + porciones + '</td><td></td></tr>';
+      outerHTML += '<tr><td>visitas</td><td>' + visitas + '</td><td></td></tr>';
+      outerHTML += '<tr><td>enfermos</td><td>' + enfermos + '</td><td></td></tr>';
+      outerHTML += '<tr><td>ayunos</td><td>' + ayunos + '</td><td></td></tr>';
+      outerHTML += '<tr><td>horas</td><td>' + horas + '</td><td></td></tr>';
+      outerHTML += '<tr><td>sanidades</td><td>' + sanidades + '</td><td></td></tr>';
+      outerHTML += '<tr><td>mensajes</td><td>' + mensajes + '</td><td></td></tr>';
+      outerHTML += '<tr><td>dirigidos</td><td>' + dirigidos + '</td><td></td></tr>';
+      outerHTML += '<tr><td>trabajadas</td><td>' + trabajadas + '</td><td></td></tr>';
+      outerHTML += '<tr><td>otros</td><td>' + otros + '</td><td></td></tr>';
+      outerHTML += '<tr><td>detalle</td><td>' + detalle + '</td><td></td></tr>';
+      outerHTML += '<tr><td>comentarios</td><td>' + comentarios + '</td><td></td></tr>';
+
+    elements = [];
+    document.querySelector("#elementsReporte").innerHTML = outerHTML;
+  };
+}
+
+</script>
+</body>
 </html>
