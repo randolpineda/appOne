@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2016 by anonymous (http://jsbin.com/lixeximevi/2/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Reporte Mensual Obrero</title>
+<style id="jsbin-css">
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+}
+td {
+    font-size: 12px;
+}
+.registros {
+    font-family: Arial, Helvetica, sans-serif;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.registros td {
+    font-size: 12px;
+    border: 1px solid #204d74;
+    padding: 3px 7px 2px 7px;
+}
+.registros .hdn {
+    font-size: 12px;
+    border: 0px solid #204d74;
+    padding: 0px 0px 0px 0px;
+}
+.registros .th {
+    font-size: 12px;
+    text-align: left;
+    padding-top: 5px;
+    padding-bottom: 4px;
+    background-color: #286090;
+    color: #ffffff;
+}
+
+.registros tr.alt td {
+    color: #000000;
+    background-color: #d9edf7;
+}
+input[type="text"]
+{
+	font-family:  Arial, sans-serif;
+	padding: 2px 2px;
+	font-size: 12pt;
+	line-height: 1.15;
+	color: rgb(125,125,125);
+	background-color: rgb(255,250,250);
+	background-color: rgba(255,250,250,0.5);
+	border-radius: 2px;
+	box-shadow: 1px 1px 5px rgba(125,125,125, 1) inset;
+	border: #ccc 1px solid;
+	margin: 0px;
+	display: inline-block;
+}
+select
+{
+	padding: 2px 2px;
+	font-size: 12pt;
+	line-height: 1.15;
+	color: rgb(125,125,125);
+	background-color: rgb(255,250,250);
+	background-color: rgba(255,250,250,0.5);
+	border-radius: 2px;
+	box-shadow: 1px 1px 5px rgba(125,125,125, 1) inset;
+	border: #ccc 1px solid;
+	margin: 0px;
+}
+.boton
+{
+	display: inline-block;
+	padding: 2px 6px;
+	margin-bottom: 0;
+	font-size: 14px;
+	font-weight: normal;
+	line-height: 1.5;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: middle;
+	cursor: pointer;
+	background-image: none;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	text-decoration: none;
+}
+.boton-verde
+{
+	color: #fff;
+	background-color: #5cb85c;
+	border-color: #4cae4c;
+}
+.boton-verde:hover
+{
+	color: #fff;
+	background-color: #449d44;
+	border-color: #398439;
+}
+.boton-azul
+{
+	color: #fff;
+	background-color: #337ab7;
+	border-color: #2e6da4;
+}
+.boton-azul:hover
+{
+	color: #fff;
+	background-color: #286090;
+	border-color: #204d74;
+}
+.boton-naranja
+{
+	color: #fff;
+	background-color: #f0ad4e;
+	border-color: #eea236;
+}
+.boton-naranja:hover
+{
+	color: #fff;
+	background-color: #ec971f;
+	border-color: #d58512;
+}
+.boton-rojo
+{
+	color: #fff;
+	background-color: #d9534f;
+	border-color: #d43f3a;
+}
+.boton-rojo:hover
+{
+	color: #fff;
+	background-color: #c9302c;
+	border-color: #ac2925;
+}
+.boton-celeste
+{
+	color: #fff;
+	background-color: #5bc0de;
+	border-color: #46b8da;
+}
+.boton-celeste:hover
+{
+	color: #fff;
+	background-color: #31b0d5;
+	border-color: #269abc;
+}
+
+</style>
+</head>
+<body>
+
+<script id="jsbin-javascript">
+/**
+ * Definición de variables
+ */
+var enEdicion=0;
+var xmlDoc;
+var campos=[];
+var feligres=["id", "nombre", "grado", "departamento", "responsabilidad", "pastor", "lugar"];
+var registros=[];
+var nombre="";
+var cadenaXML;
+var origenXML = "cadena";
+var catGrado=["Visita Regular", "Candidato Bautismo", "Miembro", "Miembro Ungido", 
+              "Buen Samaritano", "Buen Samaritano Ungido", "Centinela", "Centinela Ungido",
+              "Brigada de Luz", "Discipulo", "Predicador Auxiliar", "Predicador", 
+              "Pre-Evangelista", "Evangelista", "Evangelista Diaconisa", "Maestro Evangelista", 
+              "Supervisor", "Superintendente", "Obispo", "Apóstol"];
+var reporte=["id", "mes", "año", "avivamiento", "hogares", "estudios", "realizados", "biblias", "mensajeros", "porciones", "visitas",
+			 "enfermos", "ayunos", "horas", "sanidades", "mensajes", "dirigidos", "devocionales", "trabajadas", "otros", "detalle", "comentarios"];
+ var catMeses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+ /**
+ * Cargar desde un archivo XML
+ * @filename 
+ */
+function cargarArchivoXML(filename)
+{
+	if (window.XMLHttpRequest)
+	{
+		xhttp=new XMLHttpRequest();
+	}
+	else // code for IE5 and IE6
+	{
+		xhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	xhttp.open("GET",filename,false);
+	xhttp.send();
+	return xhttp.responseXML;
+}
+
+/**
+/* Cargar desde una Cadena XML
+ * @txt 
+ */
+function cargarCadenaXML(txt) 
+{
+	if (window.DOMParser)
+	{
+		parser=new DOMParser();
+		xmlDoc=parser.parseFromString(txt,"text/xml");
+	}
+	else // code for IE
+	{
+		xmlDoc=new ActiveXObject("Microsoft.XMLDOM");
+		xmlDoc.async=false;
+		xmlDoc.loadXML(txt); 
+	}
+	return xmlDoc;
+}
+
+/**
+ * Obtiene los registros de un elemento
+ * @nombre 
+ */
+function obtenerRegistros(tNombre){
+	xmlDoc=cargarCadenaXML(cadenaXML);
+	var elementos=xmlDoc.getElementsByTagName(tNombre); 
+	var id;
+	console.log("tagName: " + tNombre + "| elementos: " + elementos.length);
+	registros=[];
+	for(i=0;i<elementos.length;i++){
+		elemento=elementos[i].childNodes;
+		id=elementos[i].attributes.getNamedItem("id").value;
+		/*if(i===0){
+		campos.push("id");
+		for(k=0;k<elemento.length;k++){
+		campos.push(elemento[k].nodeName);
+		}
+		}*/
+		registro=[];
+		registro.push(id);
+		for(j=0;j<elemento.length;j++){
+			if(typeof(elemento[j].childNodes[0])=="undefined")
+				registro.push("");
+			else
+				registro.push(elemento[j].childNodes[0].nodeValue);
+		}
+		registros.push(registro);
+	}
+	//console.log(registros);
+}
+
+/**
+	Crea tabla para edicion de registros
+*/
+function tablaEditable(filaData, tNombre){
+	try{
+		if(!enEdicion){
+			var tabla=document.createElement("TABLE");
+			tabla.id="Detalle_" + tNombre;
+			campos = eval(tNombre);
+			var fila;
+			for(i=0;i<campos.length;i++){
+				fila=tabla.insertRow(-1);
+				columna=fila.insertCell(0);
+				columna.innerHTML=campos[i].toUpperCase();
+				columna=fila.insertCell(1);
+				switch(campos[i]){
+					case "id":
+						txtIn=document.createElement("INPUT");
+						txtIn.type="text";
+						txtIn.readOnly=true;
+						if(filaData==null)
+							txtIn.value=new Date().valueOf();
+						break;
+					case "grado":
+						txtIn=document.createElement("SELECT");
+						for(j=0;j<catGrado.length;j++){
+							opcion=document.createElement("option");          
+							opcion.text=catGrado[j];
+							txtIn.add(opcion);
+						}
+						break;
+					case "mes":
+						txtIn=document.createElement("SELECT");
+						for(j=0;j<catMeses.length;j++){
+							opcion=document.createElement("option");          
+							opcion.text=catMeses[j];
+							txtIn.add(opcion);
+						}
+						break;
+					default:
+						txtIn=document.createElement("INPUT");
+						txtIn.type="text";
+						//txtIn.size=10;
+						break;
+				}      
+				if(filaData!=null){
+					if(i<=2){
+						txtIn.value=filaData.cells[i].innerHTML;
+					}
+					else{
+						txtIn.value=filaData.cells[i].firstChild.value;
+					}
+				}
+					
+				txtIn.id="c"+campos[i];
+				columna.appendChild(txtIn);
+			}
+			fila=tabla.insertRow(-1);
+			var btn=document.createElement("INPUT");
+			btn.id="btnCancelar";
+			btn.type="button";
+			btn.value="Cancelar";
+			btn.className="boton boton-celeste";
+			
+			btn.onclick=function(){
+				div=document.getElementById("Detalle_" + tNombre).parentNode;
+				div.removeChild(div.firstChild);
+				document.getElementById("btnNuevo_" + tNombre).disabled=false;
+				enEdicion=false;
+			}
+			columna=fila.insertCell(0);
+			columna.appendChild(btn);
+			columna=fila.insertCell(1);
+			btn=document.createElement("INPUT");
+			btn.id="btnGardar";
+			btn.type="button";
+			btn.value="Guardar";
+			btn.className="boton boton-verde";
+			btn.onclick=function(){guardarRegistro(tNombre);};
+			columna.appendChild(btn);
+			var detalle=document.getElementById("div" + tNombre);
+			detalle.appendChild(tabla);
+			document.getElementById("btnNuevo_" + tNombre).disabled=true;
+			enEdicion=true;
+		}
+	}
+	catch(err){
+		alert(err.stack);
+	}
+}
+/**
+ * Crear Grid
+ * @nombre 
+ */
+function crearGrid(tNombre){
+	try{
+		var tabla=document.createElement("TABLE");
+		tabla.id="Tabla_" + tNombre;//"registros";
+		console.log("CREAR: Tabla: " + tabla.id);
+		tabla.className="registros";
+		document.body.appendChild(tabla);
+		var encabezado = tabla.createTHead();
+		var fila = encabezado.insertRow(0);
+		var columna = fila.insertCell(0);
+
+		columna.innerHTML = nombre.toUpperCase(); 
+		fila = tabla.insertRow(-1);
+		campos = eval(tNombre);
+		//Creo Encabezados Tabla
+		for(i=0;i<campos.length;i++){
+			columna = fila.insertCell(i);
+			if(i<=2){
+				columna.innerHTML = campos[i].toUpperCase();
+				columna.style.textAlign="center";
+				columna.className="th";
+			}
+			else{
+				columna.style.visibility ="hidden";
+				columna.style.width=0;
+				columna.className="hdn";
+			}
+		}
+		columna=fila.insertCell(i);
+		columna.innerHTML="Seleccionar";
+		columna.className="th";
+		//Creo filas de la tabla
+		var hdn;
+		for(i=0;i<registros.length;i++){
+			registro=registros[i];
+			fila=tabla.insertRow(-1);
+			//fila.onclick=function(){filaEditable(this,tNombre);};
+			for(j=0;j<registro.length;j++){      
+				columna=fila.insertCell(j);
+				columna.onclick=function(){tablaEditable(this.parentNode,tNombre);};
+				if(j<=2){
+					columna.innerHTML=registro[j];
+					columna.style.whiteSpace="nowrap";
+				}
+				else{
+					hdn=document.createElement("INPUT");
+					hdn.type="hidden";
+					hdn.value=registro[j];
+					hdn.width="0px";
+					columna.appendChild(hdn);
+					columna.style.visibility ="hidden";
+					columna.className="hdn";
+					columna.style.width=0;
+				}
+			}
+			columna=fila.insertCell(j);
+			columna.style.textAlign="center";
+			var radio=document.createElement("INPUT");
+			radio.type="radio";
+			radio.name="llave_" + tNombre;
+			radio.value=registro[0];
+			columna.appendChild(radio);
+		}
+	}
+	catch(err){
+		alert(err.stack);
+	}
+}
+
+/**
+ * Guarda el registro 
+ */
+function guardarRegistro(tNombre){
+	var i, xregistro, xcampo, xvalor, xtexto;
+	var tabla, fila, columna, existe, nueva;
+	nueva=false;
+	try{
+		xvalor=document.getElementById("cid").value;
+		tabla=document.getElementById("Tabla_" + tNombre);
+		fila=null;
+		for(i=0;i<tabla.rows.length;i++){
+			if(tabla.rows[i].cells[0].innerHTML==xvalor){
+				fila=tabla.rows[i];
+				nueva=false;
+				break;
+			}
+		}
+		if(fila==null){
+			fila=tabla.insertRow(-1);
+			nueva=true;
+		}
+		xregistro=buscarEnXml(xvalor, tNombre);
+		existe=true;
+		campos=eval(tNombre);
+		if(!xregistro){
+			xregistro=xmlDoc.createElement(tNombre);
+			existe=false;
+		}
+		for(i=0;i<campos.length;i++){
+			xvalor=document.getElementById("c"+campos[i]);
+			if(campos[i]=="id"){
+				xregistro.setAttribute("id",xvalor.value);
+			}
+			else{
+				xcampo=xmlDoc.createElement(campos[i]);
+				xtexto=xmlDoc.createTextNode(xvalor.value);
+				xcampo.appendChild(xtexto);
+				if(!existe){
+					xregistro.appendChild(xcampo);
+				}
+				else{
+					if(xregistro.childNodes[i-1].childNodes[0])
+						xregistro.childNodes[i-1].childNodes[0].nodeValue=xvalor.value;
+					else
+						xregistro.childNodes[i-1].appendChild(xtexto);
+					console.log("guardar"+campos[i]+" * "+ xregistro.childNodes[i-1].childNodes[0].nodeValue);    
+				}
+			}
+			if(nueva){
+				columna=fila.insertCell(i);
+				columna.onclick=function(){tablaEditable(this.parentNode,tNombre);};
+				}
+			else
+				columna=fila.cells[i];
+			if(i<=2){
+				columna.innerHTML=xvalor.value;
+				columna.style.whiteSpace="nowrap";
+			}
+			else{
+				if(nueva){
+					hdn=document.createElement("INPUT");
+					hdn.type="hidden";
+					hdn.width="0px";
+				}
+				else
+					hdn=columna.firstChild;
+				hdn.value=xvalor.value;
+				columna.appendChild(hdn);
+				columna.style.visibility ="hidden";
+				columna.className="hdn";
+				columna.style.width=0;
+			}
+		}
+		if(nueva){
+			columna=fila.insertCell(i);
+			columna.style.textAlign="center";
+			var radio=document.createElement("INPUT");
+			radio.type="radio";
+			radio.name="llave_" + tNombre;
+			radio.value=registro[0];
+			columna.appendChild(radio);
+		}
+		parent=xmlDoc.documentElement;
+		parent.appendChild(xregistro);
+		enEdicion=false;
+		document.getElementById("btnNuevo_" + tNombre).disabled=false;
+		div=document.getElementById("Detalle_" + tNombre).parentNode;
+		div.removeChild(div.firstChild);
+
+		cadenaXML=(new XMLSerializer()).serializeToString(xmlDoc);
+		document.getElementById("inXml").value=cadenaXML;
+		console.log("GUARDAR: XML: " + cadenaXML);
+	}catch(err){
+		alert(err.stack);
+	}
+}
+
+/**
+ *Buscar
+ */
+function buscarRegistro(tNombre){
+  var valor=document.getElementById("rdEliminar").value;
+  alert("rdEliminar:"+valor);
+  buscarEnXml(valor,tNombre);
+}
+
+/**
+ *
+ */
+function buscarEnXml(valor, tNombre){
+  var path="//datos/" + tNombre + "[@id='"+valor+"']";
+  var nodos, nodo;
+  if (window.ActiveXObject || xmlDoc.responseType=="msxml-document")
+  {
+    xmlDoc.setProperty("SelectionLanguage","XPath");
+    nodos=xmlDoc.selectNodes(path);
+    if(nodos.length>0)
+    {
+      //alert("nodo:"+nodos[i].getAttribute("id"));
+      nodo=nodos[i];
+    }
+  }
+  else if (document.implementation && document.implementation.createDocument)
+  {
+    nodos=xmlDoc.evaluate(path, xmlDoc, null, XPathResult.ANY_TYPE, null);
+    nodo=nodos.iterateNext();
+    //if(nodo) alert("NOdO>>:"+nodo.getAttribute("id"));
+  }
+  return nodo;
+}
+
+/**
+ * Eliminar Registros
+ */
+function eliminarRegistro(tNombre){
+	var i, valor, tabla, fila;
+	try{
+		llaves=document.getElementsByName("llave_" + tNombre);
+		for(i=0;i<llaves.length;i++){
+			if(llaves[i].checked){
+				fila=llaves[i].parentNode.parentNode;
+				valor=llaves[i].value;
+				break;
+			}
+		}
+		var nodo=buscarEnXml(valor,tNombre);
+		if(nodo){
+			nodo.parentNode.removeChild(nodo);
+			document.getElementById("Tabla_" + tNombre).deleteRow(fila.rowIndex);//("registros").deleteRow(indice);
+			alert("REgistro [" + valor + "] eliminado de [" + tNombre + "].");
+		}
+		else{
+			alert("No existe registro para eliminar en ["+tNombre+"]");
+		}
+
+		cadenaXML=(new XMLSerializer()).serializeToString(xmlDoc);
+		document.getElementById("inXml").value=cadenaXML;
+	}
+	catch(err){
+		alert(err.stack);
+	}
+}
+
+/*
+ * Crea el boton para nuevos registros
+ */
+function crearBotones(tNombre){
+	//Boton para nuevos registros
+	var btnNuevo=document.createElement("INPUT");
+	btnNuevo.id="btnNuevo_" + tNombre;
+	btnNuevo.type="button";
+	btnNuevo.value="Nuevo";
+	btnNuevo.className="boton boton-verde";
+	btnNuevo.onclick=function(){tablaEditable(null,tNombre);}//{nuevoRegistro(tNombre);};
+	document.body.appendChild(btnNuevo);
+	
+	//Boton para elimnar registro de la tabla
+	btnNuevo=document.createElement("INPUT");
+	btnNuevo.id="btnBorrar_" + tNombre;
+	btnNuevo.type="button";
+	btnNuevo.value="Borrar";
+	btnNuevo.className="boton boton-rojo";
+	btnNuevo.onclick=function(){eliminarRegistro(tNombre);};
+	document.body.appendChild(btnNuevo);
+}
+
+/**
+ Guarda toda la información de la pantalla.
+*/
+function guardarTodo(){
+  localStorage.setItem("datosXML", cadenaXML);
+}
+
+/**
+	Dibuja el reporte en un CANVAS
+*/
+function dibujar(fData, rData){
+	try{
+        var c = document.getElementById("myCanvas");
+        var ctx = c.getContext("2d");
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "black";
+		ctx.lineWidth=1;
+		ctx.fillRect(0,0,800,400);
+        
+        ctx.strokeRect(505,35,235,20);
+        ctx.strokeRect(35,60,465,20);  ctx.strokeRect(505,60,235,20);
+        ctx.strokeRect(35,85,405,20);  ctx.strokeRect(445,85,295,20);
+        ctx.strokeRect(35,110,405,20); ctx.strokeRect(445,110,295,20);
+
+        ctx.strokeRect(280,135,50,20); ctx.strokeRect(350,135,50,20);  ctx.strokeRect(635,135,105,195);
+        ctx.strokeRect(280,160,50,20); ctx.strokeRect(350,160,50,20);  ctx.strokeRect(540,160,50,20);
+        ctx.strokeRect(280,185,50,20); ctx.strokeRect(350,185,50,20);  
+        ctx.strokeRect(280,210,50,20); ctx.strokeRect(350,210,50,20);  
+        ctx.strokeRect(280,235,50,20); ctx.strokeRect(350,235,50,20);  
+        ctx.strokeRect(280,260,50,20); ctx.strokeRect(350,260,50,20);  
+        ctx.strokeRect(280,285,50,20); ctx.strokeRect(350,285,50,20);  ctx.strokeRect(540,285,50,20);
+        ctx.strokeRect(280,310,50,20); ctx.strokeRect(350,310,50,20);  
+		ctx.beginPath(); ctx.moveTo(445,330); ctx.lineTo(630,330); ctx.stroke();
+		ctx.beginPath(); ctx.moveTo(130,360); ctx.lineTo(740,360); ctx.stroke();
+
+ 		ctx.beginPath();
+        ctx.strokeStyle = "gray";
+		ctx.arc(680,300,25,0,2*Math.PI)
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.stroke();
+		ctx.lineWidth=8;
+		ctx.arc(680,300,19,0,2*Math.PI)
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.stroke();
+		ctx.arc(680,300,5,0,2*Math.PI)
+        ctx.fillStyle = "gray";
+		ctx.stroke();
+
+		/*var logo = document.createElement("img");
+		logo.src="insignia.png";
+		logo.onload = function(){
+			ctx.drawImage(logo,667,275,40,40);
+		};*/
+		ctx.fillStyle="black";
+		ctx.font="10px Arial";
+		ctx.fillText("RandDol © 2016",650,370);
+		ctx.font="bold 25px Arial";
+		ctx.fillText("REPORTE MENSUAL DEL OBRERO",35,55);
+		ctx.font="12px Arial";
+		ctx.fillText("MES:",510,50); ctx.fillText("AÑO:",650,50);
+		ctx.fillText("NOMBRE:",40,75); ctx.fillText("GRADO:",510,75);
+		ctx.fillText("MINISTERIO O DEPARTAMENTO:",40,100); ctx.fillText("RESPONSABILIDAD:",450,100);
+		ctx.fillText("NOMBRE DEL PASTOR:",40,125); ctx.fillText("LUGAR:",450,125);
+		ctx.textAlign="end";
+		ctx.fillText("AVIVAMIENTOS REALIZADOS:",275,150);
+		ctx.fillText("HOGARES VISITADOS:",275,175);
+		ctx.fillText("ESTUDIOS BIBLICOS ESTABLECIDOS:",275,200);
+		ctx.fillText("ESTUDIOS BIBLICOS REALIZADOS:",2735,225);
+		ctx.fillText("BIBLIAS DISTRIBUIDAS:",275,250);
+		ctx.fillText("MENSAJEROS DISTRIBUIDOS:",275,275);
+		ctx.fillText("PORCIONES DISTRIBUIDAS:",275,300);
+		ctx.fillText("VISITAS TRAIDAS A LOS CULTOS:",275,325);
+		ctx.textAlign="start";
+		ctx.fillText("ENFERMOS VISITADOS:",405,150);
+		ctx.fillText("AYUNOS REALIZADOS:",405,175); ctx.fillText("HRS.",595,175);
+		ctx.fillText("SANIDADES DIVINAS REALIZADAS:",405,200);
+		ctx.fillText("MENSAJES PREDICADOS:",405,225);
+		ctx.fillText("CULTOS DIRIGIDOS:",405,250);
+		ctx.fillText("HORAS DEVOCIONALES ASISTIDAS:",405,275);
+		ctx.fillText("HORAS TRABAJADAS:",405,300);
+		ctx.fillText("OTROS:",405,325);
+		ctx.fillText("COMENTARIOS:",35,350);
+		ctx.textAlign="center";
+		ctx.fillText("Entregue",680,170);
+		ctx.fillText("este reporte",680,190);
+		ctx.fillText("personalmente",680,210);
+		ctx.fillText("a su pastor",680,230);
+		ctx.fillText("¡Dios le",680,250);
+		ctx.fillText("bendiga!",680,270);
+
+		ctx.textAlign="start";
+		ctx.fillStyle="blue";
+		ctx.fillText(rData[1],540,50); ctx.fillText(rData[2],690,50);
+		ctx.fillText(fData[1], 100,75); ctx.fillText(fData[2],560,75);
+		ctx.fillText(fData[3],230,100); ctx.fillText(fData[4],570,100);
+		ctx.fillText(fData[5],180,125); ctx.fillText(fData[6],510,125);
+		ctx.fillText(rData[3], 310, 150);
+		ctx.fillText(rData[4], 310, 175);
+		ctx.fillText(rData[5], 310, 200);
+		ctx.fillText(rData[6], 310, 225);
+		ctx.fillText(rData[7], 310, 250);
+		ctx.fillText(rData[8], 310, 275);
+		ctx.fillText(rData[9], 310, 300);
+		ctx.fillText(rData[10], 310, 325);
+		ctx.fillText(rData[11], 370, 150);
+		ctx.fillText(rData[12], 370, 175); ctx.fillText(rData[13], 550, 175);
+		ctx.fillText(rData[14], 370, 200);
+		ctx.fillText(rData[15], 370, 225);
+		ctx.fillText(rData[16], 370, 250);
+		ctx.fillText(rData[17], 370, 275);
+		ctx.fillText(rData[18], 370, 300);
+		ctx.fillText(rData[19], 370, 325);
+		ctx.fillText(rData[20], 450, 325);
+		ctx.fillText(rData[21], 130, 350);
+		
+        var img = document.getElementById("imgrpt");
+		if(img==null){
+			img = document.createElement("IMG");
+			img.id="imgrpt";
+		}
+        img.src = c.toDataURL("image/png");	
+		document.body.appendChild(img);
+		}
+		catch(err) {
+			alert(err.stack);
+		}
+	}
+
+function imprimir(){
+	var fData=[];
+	var rData=[];
+	var fila;
+	try{
+		llaves=document.getElementsByName("llave_feligres");
+		for(i=0;i<llaves.length;i++){
+			if(llaves[i].checked){
+				fila=llaves[i].parentNode.parentNode;
+				break;
+			}
+		}
+		for(i=0;i<feligres.length;i++){
+			if(i<=2){
+				fData.push(fila.cells[i].innerHTML);
+			}
+			else{
+				fData.push(fila.cells[i].firstChild.value);
+			}
+		}
+
+		llaves=document.getElementsByName("llave_reporte");
+		for(i=0;i<llaves.length;i++){
+			if(llaves[i].checked){
+				fila=llaves[i].parentNode.parentNode;
+				break;
+			}
+		}
+		for(i=0;i<reporte.length;i++){
+			if(i<=2){
+				rData.push(fila.cells[i].innerHTML);
+			}
+			else{
+				rData.push(fila.cells[i].firstChild.value);
+			}
+		}
+
+		dibujar(fData,rData);
+	}
+	catch(err){
+		alert(err.stack);
+	}
+}	
+/*
+ * Programa Principal
+ */
+//window.alert("incio");
+function Principal(){
+try{
+	if(typeof(Storage) !== "undefined") {
+	  cadenaXML=localStorage.getItem("datosXML");
+		//alert("soportado");
+	  if(cadenaXML=='null' || cadenaXML==null)
+		cadenaXML="<datos></datos>";
+	  //alert(cadenaXML);
+	} else {
+		alert("localStorage no soportado.");// Sorry! No Web Storage support..
+	}
+
+	//Boton para guardar la tabla
+	btnNuevo=document.createElement("INPUT");
+	btnNuevo.id="btnGuardarTodo";
+	btnNuevo.type="button";
+	btnNuevo.value="Guardar Datos";
+	btnNuevo.className="boton boton-azul";
+	btnNuevo.onclick=function(){guardarTodo();};
+	document.body.appendChild(btnNuevo);
+	btnNuevo=document.createElement("INPUT");
+	btnNuevo.id="btnImprimir";
+	btnNuevo.type="button";
+	btnNuevo.value="Imprimir Reporte";
+	btnNuevo.className="boton boton-verde";
+	btnNuevo.onclick=function(){imprimir();};
+	document.body.appendChild(btnNuevo);
+	document.write("RandDol © 2016");
+	document.write("<hr>");
+	
+	nombre="feligres";
+	obtenerRegistros(nombre);
+	crearBotones(nombre);
+	crearGrid(nombre); 
+	
+	var detalle=document.createElement("DIV");
+	detalle.id="div" + nombre;
+	document.body.appendChild(detalle);
+	document.write("<br><hr><br>");
+	nombre="reporte";
+	obtenerRegistros(nombre);
+	crearBotones(nombre);
+	crearGrid(nombre); 
+
+	var detalle=document.createElement("DIV");
+	detalle.id="div" + nombre;
+	document.body.appendChild(detalle);
+
+	var inXml=document.createElement("TEXTAREA");
+	inXml.id="inXml";
+	inXml.readOnly=true;
+	inXml.style.visibility="hidden";
+	document.body.appendChild(inXml);
+
+	var divCanvas=document.createElement("DIV");
+	divCanvas.id="divCanvas";
+
+	var canvas=document.createElement("CANVAS");
+	canvas.id="myCanvas";
+	canvas.width="800";
+	canvas.height="400";
+	divCanvas.appendChild(canvas);
+	divCanvas.style.width="0px";
+	divCanvas.style.height="0px";
+	divCanvas.style.visibility="hidden";
+	document.body.appendChild(divCanvas);
+
+	}	
+	catch(err) {
+		alert(err.stack);
+	}
+}
+
+Principal();
+
+</script>
+</body>
+</html>
